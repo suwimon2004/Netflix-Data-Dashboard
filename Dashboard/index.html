@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Netflix Advanced Analytics</title>
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --netflix-red: #E50914;
+            --dark-bg: #eeebeb;
+            --card-bg: #1f1f1f;
+            --text-gray: #aaa;
+        }
+
+        body { 
+            font-family: 'Kanit', sans-serif; 
+            background: var(--dark-bg); 
+            color: white; 
+            margin: 0; 
+            padding: 30px; 
+        }
+
+        h1 { 
+            color: var(--netflix-red); 
+            text-align: center; 
+            margin-bottom: 40px; 
+            text-transform: uppercase; 
+            letter-spacing: 3px;
+            font-weight: 500;
+        }
+
+        /* --- ส่วนที่เพิ่มใหม่: สไตล์ของช่องค้นหา --- */
+        .search-container {
+            max-width: 925px;
+            margin: 0 auto 30px auto;
+        }
+        .search-card {
+            background: var(--card-bg);
+            padding: 25px;
+            border-radius: 12px;
+            border: 1px solid #333;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+        .search-input-group {
+            display: flex;
+            gap: 10px;
+        }
+        input {
+            flex: 1;
+            padding: 12px;
+            border-radius: 5px;
+            border: 1px solid #444;
+            background: #000;
+            color: white;
+            font-family: 'Kanit';
+        }
+        .search-btn {
+            padding: 10px 25px;
+            background: var(--netflix-red);
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-family: 'Kanit';
+        }
+        #searchResult {
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid #333;
+            display: none;
+        }
+        /* -------------------------------------- */
+
+        .grid-container { 
+            display: grid; 
+            grid-template-columns: repeat(auto-fit, minmax(450px, 1fr)); 
+            gap: 25px; 
+        }
+
+        .card { 
+            background: var(--card-bg); 
+            padding: 25px; 
+            border-radius: 12px; 
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5); 
+            transition: transform 0.3s ease;
+            border: 1px solid #333;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            border-color: var(--netflix-red);
+        }
+
+        .insight-text {
+            margin-top: 15px;
+            font-size: 13px;
+            color: var(--text-gray);
+            line-height: 1.6;
+            border-top: 1px solid #333;
+            padding-top: 10px;
+            font-weight: 300;
+        }
+
+        h3 { 
+            border-left: 4px solid var(--netflix-red); 
+            padding-left: 15px; 
+            font-size: 18px; 
+            margin-top: 0; 
+            margin-bottom: 20px;
+            color: white; 
+        }
+
+        table { width: 100%; border-collapse: collapse; }
+        td { 
+            padding: 12px 8px; 
+            border-bottom: 1px solid #333; 
+            font-size: 14px; 
+            font-weight: 300;
+        }
+
+        canvas { width: 100% !important; height: 300px !important; }
+    </style>
+</head>
+<body>
+    <h1>Netflix Data Analysis Dashboard</h1>
+
+    <div class="search-container">
+        <div class="search-card">
+            <h3>🔎 ค้นหาข้อมูลภาพยนตร์ / ซีรีส์</h3>
+            <div class="search-input-group">
+                <input type="text" id="sk" placeholder="ระบุชื่อหนังที่ต้องการค้นหา...">
+                <button class="search-btn" onclick="doSearch()">ค้นหา</button>
+            </div>
+            <div id="searchResult"></div>
+        </div>
+    </div>
+    <div class="grid-container">
+        <div class="card">
+            <canvas id="chartTypes"></canvas>
+            <p class="insight-text"><b>Insight:</b> แสดงสัดส่วนระหว่างภาพยนตร์และซีรีส์ โดยปกติ Netflix จะมีจำนวนภาพยนตร์ (Movies) สูงกว่าซีรีส์ เพื่อเน้นความหลากหลายของเนื้อหาที่จบในตอนเดียว</p>
+        </div>
+
+        <div class="card">
+            <canvas id="chartRatings"></canvas>
+            <p class="insight-text"><b>Insight:</b> วิเคราะห์กลุ่มเป้าหมายหลักผ่านเรตติ้ง เช่น TV-MA หรือ TV-14 ซึ่งสะท้อนว่าเนื้อหาส่วนใหญ่ถูกผลิตขึ้นเพื่อผู้ชมวัยรุ่นและผู้ใหญ่</p>
+        </div>
+        
+        <div class="card">
+            <canvas id="chartCountries"></canvas>
+            <p class="insight-text"><b>Insight:</b> 10 อันดับประเทศที่เป็นแหล่งผลิตเนื้อหาหลัก พบว่าสหรัฐอเมริกายังคงเป็นผู้นำ ตามด้วยอินเดียที่มีอุตสาหกรรมภาพยนตร์ที่แข็งแกร่ง</p>
+        </div>
+
+        <div class="card">
+            <canvas id="chartYears"></canvas>
+            <p class="insight-text"><b>Insight:</b> แสดงแนวโน้มปีที่ผลิตคอนเทนต์ออกมามากที่สุด ช่วยให้เห็นช่วงเวลาที่อุตสาหกรรมบันเทิงเติบโตแบบก้าวกระโดด</p>
+        </div>
+
+        <div class="card">
+            <canvas id="chartGenres"></canvas>
+            <p class="insight-text"><b>Insight:</b> เจาะลึกหมวดหมู่ยอดนิยม เช่น Dramas หรือ International Movies ซึ่งเป็นแนวทางหลักที่ดึงดูดผู้ชมทั่วโลก</p>
+        </div>
+
+        <div class="card">
+            <canvas id="chartDirectors"></canvas>
+            <p class="insight-text"><b>Insight:</b> รายชื่อผู้กำกับที่มีผลงานลงในแพลตฟอร์มบ่อยที่สุด สะท้อนถึงพันธมิตรผู้สร้างสรรค์ผลงานหลักของ Netflix</p>
+        </div>
+
+        <div class="card">
+            <canvas id="chartMonths"></canvas>
+            <p class="insight-text"><b>Insight:</b> วิเคราะห์พฤติกรรมการอัปเดตคอนเทนต์รายเดือน เพื่อดูว่าช่วงเดือนไหนที่ Netflix มักจะปล่อยเนื้อหาใหม่เข้าสู่ระบบมากที่สุด</p>
+        </div>
+
+        <div class="card">
+            <canvas id="chartSeasons"></canvas>
+            <p class="insight-text"><b>Insight:</b> แสดงรายชื่อซีรีส์ที่ประสบความสำเร็จจนมีการสร้างต่อเนื่องหลายซีซั่น ซึ่งถือเป็นคอนเทนต์แม่เหล็กของแพลตฟอร์ม</p>
+        </div>
+
+        <div class="card">
+            <canvas id="chartDuration"></canvas>
+            <p class="insight-text"><b>Insight:</b> ข้อมูลความยาวของภาพยนตร์ที่มากที่สุด ช่วยให้เห็นเทรนด์การเล่าเรื่องที่ต้องใช้เวลาสูงเป็นพิเศษในบางประเภทของหนัง</p>
+        </div>
+
+        <div class="card">
+            <h3>Latest Additions on Netflix</h3>
+            <table id="recentTable"></table>
+            <p class="insight-text"><b>Insight:</b> รายการอัปเดตล่าสุด ช่วยให้ติดตามเนื้อหาที่สดใหม่ที่สุดที่เพิ่งเพิ่มเข้ามาในฐานข้อมูล</p>
+        </div>
+    </div>
+
+    <script>
+        // --- ฟังก์ชันเพิ่มใหม่: จัดการการค้นหา ---
+        function doSearch() {
+            const val = document.getElementById('sk').value;
+            const resDiv = document.getElementById('searchResult');
+            if(!val) return;
+
+            fetch(`http://127.0.0.1:5000/api/search?q=${val}`)
+                .then(r => r.json())
+                .then(d => {
+                    resDiv.style.display = 'block';
+                    if(d.found) {
+                        resDiv.innerHTML = `
+                            <h2 style="color:var(--netflix-red); margin:0">${d.title} (${d.year})</h2>
+                            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-top:15px; font-size:14px;">
+                                <div><b>🎭 นักแสดง:</b> ${d.cast || 'ไม่ระบุ'}</div>
+                                <div><b>🎬 ผู้กำกับ:</b> ${d.director || 'ไม่ระบุ'}</div>
+                                <div><b>⏱️ ความยาว/ตอน:</b> ${d.duration}</div>
+                                <div><b>⭐ เรตติ้ง:</b> ${d.rating}</div>
+                            </div>
+                            <p style="margin-top:15px; color:#ccc; font-size:14px;"><b>📝 เรื่องย่อ:</b> ${d.desc}</p>
+                            <small style="color:#666">* ข้อมูลยอดเข้าชมและลิงก์รับชมจริงไม่เปิดเผยในชุดข้อมูลสาธารณะ</small>
+                        `;
+                    } else {
+                        resDiv.innerHTML = '<p style="color:var(--netflix-red)">❌ ไม่พบข้อมูลหนังเรื่องนี้ในฐานข้อมูล</p>';
+                    }
+                });
+        }
+        // ------------------------------------
+
+        fetch('http://127.0.0.1:5000/api/all_stats')
+            .then(r => r.json())
+            .then(data => {
+                const config = (title, labels, values, type='bar', isHorizontal=false) => ({
+                    type: type,
+                    data: {
+                        labels: labels,
+                        datasets: [{ 
+                            label: title, 
+                            data: values, 
+                            backgroundColor: type === 'pie' || type === 'doughnut' 
+                                ? ['#E50914', '#B20710', '#D32F2F', '#96070d', '#564d4d', '#221F1F'] 
+                                : '#E50914',
+                            borderRadius: 5,
+                            hoverBackgroundColor: '#ff1f1f'
+                        }]
+                    },
+                    options: { 
+                        indexAxis: isHorizontal ? 'y' : 'x',
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { 
+                            legend: { 
+                                display: (type === 'pie' || type === 'doughnut'),
+                                position: 'right',
+                                labels: { color: '#ccc', font: { family: 'Kanit' } }
+                            }, 
+                            title: { 
+                                display: true, 
+                                text: title, 
+                                color: 'white', 
+                                font: { size: 17, family: 'Kanit', weight: '500' },
+                                padding: { bottom: 20 }
+                            } 
+                        },
+                        scales: type === 'bar' || type === 'line' ? {
+                            y: { 
+                                ticks: { color: '#aaa', font: { family: 'Kanit' } }, 
+                                grid: { color: 'rgba(255,255,255,0.05)' } 
+                            },
+                            x: { 
+                                ticks: { 
+                                    color: '#aaa', 
+                                    font: { family: 'Kanit' },
+                                    maxRotation: 0,
+                                    minRotation: 0 
+                                }, 
+                                grid: { display: false } 
+                            }
+                        } : {}
+                    }
+                });
+
+                new Chart(document.getElementById('chartTypes'), config('Movie vs TV Show Distribution', Object.keys(data.types), Object.values(data.types), 'pie'));
+                new Chart(document.getElementById('chartRatings'), config('Top Audience Ratings', data.ratings.map(d=>d.label), data.ratings.map(d=>d.value), 'doughnut'));
+                new Chart(document.getElementById('chartCountries'), config('Top 10 Producing Countries', data.countries.map(d=>d.label), data.countries.map(d=>d.value), 'bar', true));
+                new Chart(document.getElementById('chartGenres'), config('Popular Genres', data.genres.map(d=>d.label), data.genres.map(d=>d.value), 'bar', true));
+                new Chart(document.getElementById('chartDirectors'), config('Most Frequent Directors', data.directors.map(d=>d.label), data.directors.map(d=>d.value), 'bar', true));
+                new Chart(document.getElementById('chartYears'), config('Content Release Growth', data.years.map(d=>d.label), data.years.map(d=>d.value)));
+                new Chart(document.getElementById('chartMonths'), config('Monthly Upload Activity', data.months.map(d=>d.label), data.months.map(d=>d.value), 'line'));
+                new Chart(document.getElementById('chartSeasons'), config('TV Shows with Most Seasons', data.seasons.map(d=>d.label), data.seasons.map(d=>d.value), 'bar', true));
+                new Chart(document.getElementById('chartDuration'), config('Longest Movies (Minutes)', data.duration.map(d=>d.label), data.duration.map(d=>d.value), 'bar', true));
+
+                const table = document.getElementById('recentTable');
+                data.recent.forEach(item => {
+                    const row = `<tr><td>${item.title}</td><td style="color:#E50914; text-align:right; font-weight:400;">${item.date}</td></tr>`;
+                    table.innerHTML += row;
+                });
+            });
+    </script>
+</body>
+</html>
